@@ -1,8 +1,13 @@
 "use client";
 
-import { MOVE_LIST } from "@/lib/move-data";
 import { formatPatternLabel, isMaxPattern } from "@/lib/pattern-label";
-import { POKEMON_LIST } from "@/lib/pokemon-data";
+import {
+  getBasePokemonName,
+  getMegaForms,
+  getMovesForPokemon,
+  POKEMON_LIST,
+  resolvePokemonWithDefaultMega,
+} from "@/lib/pokemon-data";
 import { EV_NATURE_PATTERNS } from "@/lib/types";
 import type { EVNaturePattern, Move, PokemonBase } from "@/lib/types";
 
@@ -23,11 +28,27 @@ export function AttackerForm({
   onMoveChange,
   onPatternChange,
 }: AttackerFormProps) {
+  const baseName = getBasePokemonName(pokemon.name);
+  const megaForms = getMegaForms(baseName);
+  const basePokemon = POKEMON_LIST.find((p) => p.name === baseName);
+  const availableMoves = getMovesForPokemon(pokemon);
+
+  function selectPokemon(next: PokemonBase, options?: { keepMove?: boolean }) {
+    onPokemonChange(next);
+    const nextMoves = getMovesForPokemon(next);
+    if (!nextMoves.length) return;
+    if (options?.keepMove && nextMoves.some((m) => m.name === move.name)) return;
+    onMoveChange(nextMoves[0]);
+  }
+
   return (
     <section className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
       <h2 className="mb-3 text-sm font-semibold text-zinc-500 dark:text-zinc-400">
         攻撃側（固定1体）
       </h2>
+      <p className="mb-2 text-xs text-zinc-400 dark:text-zinc-500">
+        ポケモン・技は使用率順（チャンピオンズ シーズンM-4 シングルバトル）
+      </p>
 
       {/* ポケモン・技を横並び */}
       <div className="flex flex-wrap gap-3">
@@ -35,10 +56,10 @@ export function AttackerForm({
           ポケモン
           <select
             className="rounded border border-zinc-300 bg-white px-2 py-1.5 dark:border-zinc-700 dark:bg-zinc-900"
-            value={pokemon.name}
+            value={baseName}
             onChange={(e) => {
               const next = POKEMON_LIST.find((p) => p.name === e.target.value);
-              if (next) onPokemonChange(next);
+              if (next) selectPokemon(resolvePokemonWithDefaultMega(next));
             }}
           >
             {POKEMON_LIST.map((p) => (
@@ -55,11 +76,11 @@ export function AttackerForm({
             className="rounded border border-zinc-300 bg-white px-2 py-1.5 dark:border-zinc-700 dark:bg-zinc-900"
             value={move.name}
             onChange={(e) => {
-              const next = MOVE_LIST.find((m) => m.name === e.target.value);
+              const next = availableMoves.find((m) => m.name === e.target.value);
               if (next) onMoveChange(next);
             }}
           >
-            {MOVE_LIST.map((m) => (
+            {availableMoves.map((m) => (
               <option key={m.name} value={m.name}>
                 {m.name}（{m.category === "physical" ? "物理" : "特殊"} / {m.type} / 威力{m.power}）
               </option>
@@ -67,6 +88,27 @@ export function AttackerForm({
           </select>
         </label>
       </div>
+
+      {megaForms.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-4">
+          {megaForms.map((mega) => (
+            <label key={mega.name} className="flex items-center gap-1.5 text-sm">
+              <input
+                type="checkbox"
+                checked={pokemon.name === mega.name}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    selectPokemon(mega, { keepMove: true });
+                  } else if (basePokemon) {
+                    selectPokemon(basePokemon, { keepMove: true });
+                  }
+                }}
+              />
+              {mega.name}
+            </label>
+          ))}
+        </div>
+      )}
 
       {/* 努力値×性格補正の4択 */}
       <div className="mt-3 flex flex-wrap gap-4">

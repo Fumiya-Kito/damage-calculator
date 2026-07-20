@@ -32,6 +32,13 @@ export interface PokemonBase {
   name: string;
   baseStats: BaseStats;
   types: PokemonType[]; // 1つまたは2つ
+  /** メガ進化の場合、紐づく通常体の name */
+  baseName?: string;
+  /**
+   * 採用技（ダメージ計算対象のみ・使用率順）
+   * 出典: https://champs.pokedb.tokyo/ （シーズンM-4 シングル）
+   */
+  moves?: string[];
 }
 
 export type MoveCategory = "physical" | "special";

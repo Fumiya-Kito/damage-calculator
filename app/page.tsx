@@ -5,8 +5,11 @@ import { AttackerForm } from "./components/AttackerForm";
 import { DefenderPokemonForm } from "./components/DefenderPokemonForm";
 import { DamageTable } from "./components/DamageTable";
 import { calculateDamageTable } from "@/lib/damage-calculator";
-import { MOVE_LIST } from "@/lib/move-data";
-import { POKEMON_LIST } from "@/lib/pokemon-data";
+import {
+  getMovesForPokemon,
+  POKEMON_LIST,
+  resolvePokemonWithDefaultMega,
+} from "@/lib/pokemon-data";
 import { EV_NATURE_PATTERNS } from "@/lib/types";
 import type { EVNaturePattern, Move, PokemonBase } from "@/lib/types";
 
@@ -14,14 +17,16 @@ const ALL_HP_EVS: (0 | 32)[] = [0, 32];
 const ALL_DEF_PATTERNS: EVNaturePattern[] = EV_NATURE_PATTERNS.map((p) => p.key);
 
 export default function Home() {
-  const [attackerPokemon, setAttackerPokemon] = useState<PokemonBase>(
-    POKEMON_LIST[0],
+  const [attackerPokemon, setAttackerPokemon] = useState<PokemonBase>(() =>
+    resolvePokemonWithDefaultMega(POKEMON_LIST[0]),
   );
-  const [move, setMove] = useState<Move>(MOVE_LIST[0]);
+  const [move, setMove] = useState<Move>(
+    () => getMovesForPokemon(resolvePokemonWithDefaultMega(POKEMON_LIST[0]))[0],
+  );
   const [attackerPattern, setAttackerPattern] = useState<EVNaturePattern>("max");
 
-  const [defenderPokemon, setDefenderPokemon] = useState<PokemonBase>(
-    POKEMON_LIST[1],
+  const [defenderPokemon, setDefenderPokemon] = useState<PokemonBase>(() =>
+    resolvePokemonWithDefaultMega(POKEMON_LIST[1]),
   );
   const [selectedHpEVs, setSelectedHpEVs] = useState<(0 | 32)[]>(ALL_HP_EVS);
   const [selectedDefPatterns, setSelectedDefPatterns] =
