@@ -1,4 +1,4 @@
-import { calcHp, calcStat, LEVEL } from "./stat-calculator";
+import { applyStatStage, calcHp, calcStat, LEVEL } from "./stat-calculator";
 import { getTypeEffectiveness } from "./type-chart";
 import { getPatternConfig } from "./types";
 import type {
@@ -8,6 +8,7 @@ import type {
   DefenderStatRow,
   EVNaturePattern,
   PokemonBase,
+  StatStage,
 } from "./types";
 
 // 防御側の行を、選択された H努力値パターン × 防御ステータスパターンの組み合わせで生成
@@ -60,6 +61,7 @@ export function calculateDamageTable(
   defenderPokemon: PokemonBase,
   selectedHpEVs: (0 | 32)[],
   selectedDefPatterns: EVNaturePattern[],
+  defenseStage: StatStage = 0,
 ): DamageTableResult {
   const { pokemon, move } = attacker;
   const attackerPattern = getPatternConfig(attacker.pattern);
@@ -68,11 +70,12 @@ export function calculateDamageTable(
     move.category === "physical" ? "attack" : "specialAttack";
   const defStatKey = move.category === "physical" ? "defense" : "specialDefense";
 
-  const attackStat = calcStat(
+  const rawAttackStat = calcStat(
     pokemon.baseStats[offensiveStatKey],
     attackerPattern.ev,
     attackerPattern.natureBoost ? 1.1 : 1.0,
   );
+  const attackStat = applyStatStage(rawAttackStat, attacker.attackStage);
 
   const stab = pokemon.types.includes(move.type) ? 1.5 : 1;
   const typeEffectiveness = getTypeEffectiveness(move.type, defenderPokemon.types);
@@ -84,7 +87,8 @@ export function calculateDamageTable(
         defStatKey === "defense"
           ? defenderPokemon.baseStats.defense
           : defenderPokemon.baseStats.specialDefense;
-      const defStat = calcStat(defenseBase, row.defEV, row.natureBoost ? 1.1 : 1.0);
+      const rawDefStat = calcStat(defenseBase, row.defEV, row.natureBoost ? 1.1 : 1.0);
+      const defStat = applyStatStage(rawDefStat, defenseStage);
 
       const rolls = calculateDamageRolls(
         move.power,
@@ -125,6 +129,7 @@ export function calculateDamageTable(
     attacker,
     defenderPokemon,
     defStatKey,
+    defenseStage,
     rows,
   };
 }

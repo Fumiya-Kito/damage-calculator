@@ -7,17 +7,19 @@ import {
   POKEMON_LIST,
   resolvePokemonWithDefaultMega,
 } from "@/lib/pokemon-data";
-import { EV_NATURE_PATTERNS } from "@/lib/types";
-import type { EVNaturePattern, PokemonBase } from "@/lib/types";
+import { EV_NATURE_PATTERNS, formatStatStageLabel, STAT_STAGES } from "@/lib/types";
+import type { EVNaturePattern, PokemonBase, StatStage } from "@/lib/types";
 
 interface DefenderPokemonFormProps {
-  pokemon: PokemonBase;
+  pokemon: PokemonBase | null;
   defLetter: string; // 技の分類に対応する防御ステータスの文字（B または D）
   selectedHpEVs: (0 | 32)[];
   selectedDefPatterns: EVNaturePattern[];
-  onPokemonChange: (pokemon: PokemonBase) => void;
+  defenseStage: StatStage;
+  onPokemonChange: (pokemon: PokemonBase | null) => void;
   onToggleHpEV: (ev: 0 | 32) => void;
   onToggleDefPattern: (pattern: EVNaturePattern) => void;
+  onDefenseStageChange: (stage: StatStage) => void;
 }
 
 const HP_EV_OPTIONS: (0 | 32)[] = [32, 0];
@@ -27,13 +29,17 @@ export function DefenderPokemonForm({
   defLetter,
   selectedHpEVs,
   selectedDefPatterns,
+  defenseStage,
   onPokemonChange,
   onToggleHpEV,
   onToggleDefPattern,
+  onDefenseStageChange,
 }: DefenderPokemonFormProps) {
-  const baseName = getBasePokemonName(pokemon.name);
-  const megaForms = getMegaForms(baseName);
-  const basePokemon = POKEMON_LIST.find((p) => p.name === baseName);
+  const baseName = pokemon ? getBasePokemonName(pokemon.name) : null;
+  const megaForms = baseName ? getMegaForms(baseName) : [];
+  const basePokemon = baseName
+    ? POKEMON_LIST.find((p) => p.name === baseName)
+    : undefined;
 
   return (
     <section className="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
@@ -44,25 +50,47 @@ export function DefenderPokemonForm({
         ポケモンは使用率順（チャンピオンズ シーズンM-4 シングルバトル）で並んでいます
       </p>
 
-      <label className="flex max-w-xs flex-col gap-1 text-sm">
-        ポケモン
-        <select
-          className="rounded border border-zinc-300 bg-white px-2 py-1.5 dark:border-zinc-700 dark:bg-zinc-900"
-          value={baseName}
-          onChange={(e) => {
-            const next = POKEMON_LIST.find((p) => p.name === e.target.value);
-            if (next) onPokemonChange(resolvePokemonWithDefaultMega(next));
-          }}
-        >
-          {POKEMON_LIST.map((p) => (
-            <option key={p.name} value={p.name}>
-              {p.name}
-            </option>
-          ))}
-        </select>
-      </label>
+      <div className="flex flex-wrap gap-3">
+        <label className="flex max-w-xs flex-1 flex-col gap-1 text-sm">
+          ポケモン
+          <select
+            className="rounded border border-zinc-300 bg-white px-2 py-1.5 dark:border-zinc-700 dark:bg-zinc-900"
+            value={baseName ?? ""}
+            onChange={(e) => {
+              if (e.target.value === "") {
+                onPokemonChange(null);
+                return;
+              }
+              const next = POKEMON_LIST.find((p) => p.name === e.target.value);
+              if (next) onPokemonChange(resolvePokemonWithDefaultMega(next));
+            }}
+          >
+            <option value="">選択してください</option>
+            {POKEMON_LIST.map((p) => (
+              <option key={p.name} value={p.name}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </label>
 
-      {megaForms.length > 0 && (
+        <label className="flex min-w-32 flex-col gap-1 text-sm">
+          {defLetter}ランク補正
+          <select
+            className="rounded border border-zinc-300 bg-white px-2 py-1.5 dark:border-zinc-700 dark:bg-zinc-900"
+            value={defenseStage}
+            onChange={(e) => onDefenseStageChange(Number(e.target.value) as StatStage)}
+          >
+            {STAT_STAGES.map((stage) => (
+              <option key={stage} value={stage}>
+                {formatStatStageLabel(stage)}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      {pokemon && megaForms.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-4">
           {megaForms.map((mega) => (
             <label key={mega.name} className="flex items-center gap-1.5 text-sm">

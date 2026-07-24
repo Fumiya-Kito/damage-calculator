@@ -80,6 +80,7 @@ export interface AttackerConfig {
   pokemon: PokemonBase;
   move: Move;
   pattern: EVNaturePattern;
+  attackStage: StatStage;
 }
 
 // 防御側で自動生成する1行分のパターン
@@ -108,5 +109,19 @@ export interface DamageTableResult {
   attacker: AttackerConfig;
   defenderPokemon: PokemonBase;
   defStatKey: "defense" | "specialDefense";
+  defenseStage: StatStage;
   rows: DamageRowResult[];
+}
+
+
+// ランク補正（-6 〜 +6）
+export type StatStage = -6 | -5 | -4 | -3 | -2 | -1 | 0 | 1 | 2 | 3 | 4 | 5 | 6;
+
+export const STAT_STAGES: StatStage[] = [
+  -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6,
+];
+
+export function formatStatStageLabel(stage: StatStage): string {
+  if (stage === 0) return "補正なし";
+  return stage > 0 ? `+${stage}` : `${stage}`;
 }
